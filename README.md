@@ -28,19 +28,84 @@
 
 <img src="https://file.cdn.minimax.io/public/MMX-CLI.png" alt="MiniMax" width="100%" />
 
-## Install
+---
+
+## Setup for AI Agents
+
+This CLI is designed to be called programmatically by AI agents (Claude Code, Cursor, OpenClaw, etc.).
+
+### Method 1 — npm global install (recommended for agents)
 
 ```bash
-# For AI agents (OpenClaw, Cursor, Claude Code, etc.): add skill to your agent
-npx skills add MiniMax-AI/cli -y -g
-
-# Or install CLI globally for terminal use
 npm install -g mmx-cli
 ```
 
-> Requires [Node.js](https://nodejs.org) 18+
+Requires [Node.js](https://nodejs.org) 18+.
 
-> **Requires a MiniMax Token Plan** — [Global](https://platform.minimax.io/subscribe/token-plan) · [CN](https://platform.minimaxi.com/subscribe/token-plan)
+### Method 2 — Clone and run locally
+
+```bash
+# Clone from fork or upstream
+git clone https://github.com/MiniMax-AI/cli.git
+cd cli
+
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Run directly
+node dist/mmx.mjs auth login --api-key YOUR_API_KEY
+```
+
+### Method 3 — Dev mode (for active development)
+
+```bash
+git clone https://github.com/MiniMax-AI/cli.git
+cd cli
+npm install
+bun install
+
+# Run with hot reload
+bun run dev -- auth login --api-key YOUR_API_KEY
+bun run dev -- text chat --message "test"
+```
+
+---
+
+## Authentication
+
+### Get your API key
+
+1. Go to [platform.minimax.io](https://platform.minimax.io) (global) or [platform.minimaxi.com](https://platform.minimaxi.com) (CN)
+2. Navigate to **Token Plan** → copy your API key
+
+### Login
+
+```bash
+# Recommended — use --api-key flag (fast, no browser)
+mmx auth login --api-key sk-xxxxx
+
+# Verify authentication
+mmx auth status
+```
+
+> **Note:** The OAuth browser flow (`mmx auth login` without `--api-key`) may return 404 on some MiniMax accounts. Use `--api-key` flag instead — it works reliably.
+
+### Region
+
+The CLI auto-detects region from your API key prefix:
+- `sk-` prefix → global (`api.minimax.io`)
+- `eyJ` (JWT) prefix → CN (`api.minimaxi.com`)
+
+Or set manually:
+```bash
+mmx config set --key region --value cn   # for China
+mmx config set --key region --value global
+```
+
+---
 
 ## Quick Start
 
@@ -48,16 +113,76 @@ npm install -g mmx-cli
 # Authenticate
 mmx auth login --api-key sk-xxxxx
 
-# Start creating
-mmx text chat --message "What is MiniMax?"
-mmx image "A cat in a spacesuit"
-mmx speech synthesize --text "Hello!" --out hello.mp3
-mmx video generate --prompt "Ocean waves at sunset"
-mmx music generate --prompt "Upbeat pop" --lyrics "[verse] La da dee, sunny day"
-mmx search "MiniMax AI latest news"
-mmx vision photo.jpg
+# Verify
+mmx auth status
 mmx quota
+
+# Text chat
+mmx text chat --message "What is MiniMax?"
+
+# Image generation
+mmx image "A cat in a spacesuit"
+
+# Speech synthesis
+mmx speech synthesize --text "Hello!" --out hello.mp3
+
+# Video generation (async)
+mmx video generate --prompt "Ocean waves at sunset"
+
+# Music generation
+mmx music generate --prompt "Upbeat pop" --lyrics "[verse] La da dee" --out song.mp3
+
+# Web search
+mmx search "MiniMax AI latest news"
+
+# Image understanding
+mmx vision photo.jpg
 ```
+
+---
+
+## Using Programmatically
+
+### From Node.js/Bun scripts
+
+```javascript
+import { spawn } from 'child_process';
+
+const proc = spawn('mmx', ['text', 'chat', '--message', 'Hello'], {
+  env: { ...process.env },
+  timeout: 30000,
+});
+
+let output = '';
+proc.stdout.on('data', (data) => { output += data.toString(); });
+proc.on('close', (code) => console.log(output));
+```
+
+### From Python
+
+```python
+import subprocess
+result = subprocess.run(
+    ['mmx', 'text', 'chat', '--message', 'Hello'],
+    capture_output=True, text=True
+)
+print(result.stdout)
+```
+
+### From another AI agent (Claude Code, etc.)
+
+Add to your agent's skill or instructions:
+
+```bash
+# Login once
+mmx auth login --api-key YOUR_KEY
+
+# Then use any command
+mmx text chat --message "..."
+mmx image "prompt"
+```
+
+---
 
 ## Commands
 
@@ -130,8 +255,8 @@ mmx search query --q "latest news" --output json
 ### `mmx auth`
 
 ```bash
-mmx auth login --api-key sk-xxxxx
-mmx auth login                    # OAuth browser flow
+mmx auth login --api-key sk-xxxxx       # Recommended
+mmx auth login                            # OAuth browser flow (may return 404)
 mmx auth status
 mmx auth refresh
 mmx auth logout
@@ -157,6 +282,8 @@ mmx config export-schema | jq .
 mmx update
 mmx update latest
 ```
+
+---
 
 ## Thanks to
 
